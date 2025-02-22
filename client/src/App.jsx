@@ -7,7 +7,7 @@ function App() {
     fetch("https://trustgame.onrender.com/api/message")
       .then((res) => res.json())
       .then((data) => setMessage(data.message))
-      .catch((err) => setMessage("Error connecting to backend"));
+      .catch((err) => setMessage("AAA ERROR connecting to backend"));
   }, []);
 
   return (
