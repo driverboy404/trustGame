@@ -32,7 +32,7 @@ app.use((req, res, next) => {
 
 // Visitor count route
 app.get("/api/visitorCount", (req, res) => {
-    res.json({ visitorCount: visitorCount });
+    res.json({ visitorCount: "Test" });
 });
 
 app.listen(PORT, () => {
