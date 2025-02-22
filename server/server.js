@@ -1,9 +1,12 @@
-const cors = require('cors');
-const express = require('express');
-require('dotenv').config();
+const express = require("express");
+const cors = require("cors");
+require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Initialize visitorCount
+let visitorCount = 0;  // Define the visitor count and initialize it
 
 // Allow requests from Vercel frontend
 app.use(cors({
@@ -18,7 +21,6 @@ app.get("/api/message", (req, res) => {
   res.json({ message: "Hello from the Render backend!" });
 });
 
-
 // Middleware to count visitors
 app.use((req, res, next) => {
     visitorCount++;  // Increment on each request
@@ -26,14 +28,13 @@ app.use((req, res, next) => {
       visitorCount--;  // Decrement when the response is sent
     });
     next();
-  });
-  
-  // Test route
+});
+
+// Visitor count route
 app.get("/api/visitorCount", (req, res) => {
     res.json({ visitorCount: visitorCount });
 });
-  
+
 app.listen(PORT, () => {
    console.log(`Server running on http://localhost:${PORT}`);
 });
-  
