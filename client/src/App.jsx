@@ -5,9 +5,15 @@ function App() {
 
   useEffect(() => {
     fetch("https://trustgame.onrender.com/api/message")
-      .then((res) => res.json())
-      .then((data) => setMessage(data.message))
-      .catch((err) => setMessage("AAA ERROR connecting to backend"));
+    .then((res) => {
+      if (!res.ok) {
+        throw new Error(`Backend returned error: ${res.statusText}`);
+      }
+      return res.json();
+    })
+    .then((data) => setMessage(data.message))
+    .catch((err) => setMessage(`Error: ${err.message}`));
+  
   }, []);
 
   return (
