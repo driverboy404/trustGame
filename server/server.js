@@ -18,7 +18,22 @@ app.get("/api/message", (req, res) => {
   res.json({ message: "Hello from the Render backend!" });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+
+// Middleware to count visitors
+app.use((req, res, next) => {
+    visitorCount++;  // Increment on each request
+    res.on('finish', () => {
+      visitorCount--;  // Decrement when the response is sent
+    });
+    next();
+  });
+  
+  // Test route
+  app.get("/api/visitorCount", (req, res) => {
+    res.json({ visitorCount });
+  });
+  
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
   
