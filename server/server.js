@@ -29,11 +29,11 @@ app.use((req, res, next) => {
   });
   
   // Test route
-  app.get("/api/visitorCount", (req, res) => {
-    res.json({ visitorCount });
-  });
+app.get("/api/visitorCount", (req, res) => {
+    res.json({ visitorCount: visitorCount });
+});
   
-  app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
+app.listen(PORT, () => {
+   console.log(`Server running on http://localhost:${PORT}`);
+});
   
