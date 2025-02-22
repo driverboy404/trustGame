@@ -22,3 +22,8 @@ app.post("/move", (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
+
+app.get("/api/message", (req, res) => {
+    res.json({ message: "Hello from the Render backend!" });
+  });
+  

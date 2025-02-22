@@ -1,17 +1,18 @@
 import { useEffect, useState } from "react";
 
 function App() {
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState("Loading...");
 
   useEffect(() => {
-    fetch("https://trustgame.onrender.com/")
+    fetch("https://trustgame.onrender.com/api/message")
       .then((res) => res.json())
-      .then((data) => setMessage(data.message));
+      .then((data) => setMessage(data.message))
+      .catch((err) => setMessage("Error connecting to backend"));
   }, []);
 
   return (
     <div>
-      <h1>Prisoner's Dilemma</h1>
+      <h1>React Frontend</h1>
       <p>Backend says: {message}</p>
     </div>
   );
