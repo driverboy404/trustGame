@@ -109,7 +109,10 @@ app.post("/login", async (req, res) => {
   // Store the user as logged in
   loggedInUsers.push(user[0].username); // Store the username in the loggedInUsers array
 
-  res.status(200).json({ message: "Login successful" });
+  res.status(200).json({
+    message: "Login successful",
+    user: { id: user[0].id, username: user[0].username } // Make sure `username` is included
+  });
 });
 
 // Middleware to verify JWT from cookies
