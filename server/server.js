@@ -157,3 +157,19 @@ app.get('/currentUser', (req, res) => {
     return res.json({ user: null }); // No user logged in
   }
 });
+
+
+// Logout User
+app.post("/logout", verifyToken, (req, res) => {
+  // Remove the authToken cookie
+  res.clearCookie("authToken", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production", // Only send the cookie over HTTPS
+    sameSite: 'None', // For cross-origin requests
+  });
+
+  // Remove the user from the loggedInUsers array
+  loggedInUsers = loggedInUsers.filter(user => user !== req.userId);
+
+  res.status(200).json({ message: "Logout successful" });
+});
