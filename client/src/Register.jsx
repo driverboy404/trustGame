@@ -28,33 +28,33 @@ function Register() {
     checkLoggedInUser();
   }, []);
 
-  // Handle registration form submission
-  const handleRegisterSubmit = async (e) => {
+// Handle registration form submission
+const handleRegisterSubmit = async (e) => {
     e.preventDefault();
     try {
       // Register the user
       const res = await axios.post(`${API_URL}/register`, form, {
         withCredentials: true, // Send cookies along with the request
       });
-
+  
       alert(res.data.message);
-
+  
       // Log the user in immediately after registration
       const loginRes = await axios.post(
         `${API_URL}/login`,
         { email: form.email, password: form.password },
         { withCredentials: true }
       );
-
+  
       alert(loginRes.data.message);
-
+  
       // Set the logged-in user after successful login
-      setLoggedInUser(loginRes.data.user);
+      setLoggedInUser(loginRes.data.user);  // Ensure user is returned in the response
     } catch (error) {
       alert(error.response?.data.message || "Registration failed");
     }
   };
-
+  
   // Handle login form submission
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
@@ -65,15 +65,16 @@ function Register() {
         loginForm,
         { withCredentials: true }
       );
-
+  
       alert(loginRes.data.message);
-
+  
       // Set the logged-in user after successful login
-      setLoggedInUser(loginRes.data.user);
+      setLoggedInUser(loginRes.data.user);  // Ensure user is returned in the response
     } catch (error) {
       alert(error.response?.data.message || "Login failed");
     }
   };
+  
 
   const handleLogout = async () => {
     try {
