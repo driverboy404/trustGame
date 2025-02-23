@@ -19,11 +19,14 @@ const pool = new Pool({
 let loggedInUsers = [];
 
 // Allow requests from the frontend (Vercel)
-app.use(cors({
-  origin: 'https://the-trust-game.vercel.app', // Your frontend URL
-  methods: 'GET, POST',
-  credentials: true, // Allow sending cookies with the request
-}));
+const corsOptions = {
+  origin: "https://the-trust-game.vercel.app", // Allow only this domain
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // Allowed HTTP methods
+  credentials: true, // Allow cookies (for session or authentication)
+};
+
+// Enable CORS with the specified options
+app.use(cors(corsOptions));
 
 app.use(express.json()); // Allow JSON request bodies
 app.use(cookieParser()); // To parse cookies
