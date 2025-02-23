@@ -1,126 +1,91 @@
 require("dotenv").config();
 const express = require("express");
-const sqlite3 = require("sqlite3").verbose();
+const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const cors = require("cors");
+const sqlite3 = require("sqlite3").verbose();
+const { open } = require("sqlite");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const SECRET_KEY = process.env.JWT_SECRET || "your_secret_key";
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // Middleware
+app.use(cors({ origin: "https://the-trust-game.vercel.app" }));
 app.use(express.json());
 
-app.use(cors({
-  origin: 'https://the-trust-game.vercel.app',  // Replace with your actual frontend URL
-  methods: 'GET,POST',  // Define methods if needed
-}));
+// Connect to SQLite database
+let db;
+(async () => {
+  db = await open({
+    filename: "./users.db",
+    driver: sqlite3.Database,
+  });
 
+  // Create users table if it doesn't exist
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT UNIQUE,
+      email TEXT UNIQUE,
+      password TEXT
+    )
+  `);
 
-// Connect to SQLite Database
-const db = new sqlite3.Database("./users.db", (err) => {
-  if (err) console.error(err.message);
-  else console.log("Connected to SQLite database.");
-});
+  console.log("Connected to SQLite database.");
+})();
 
-// Create Users Table
-db.run(
-  `CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT UNIQUE NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL
-  )`
-);
-
-
-
-// Initialize visitorCount
-let visitorCount = 0;  // Define the visitor count and initialize it
-
-// Allow requests from Vercel frontend
-
-
-app.use(express.json()); // Allow JSON request bodies
-
-// Test route
-app.get("/api/message", (req, res) => {
-  res.json({ message: "Hello from the Render backend!" });
-});
-
-// Middleware to count visitors
-app.use((req, res, next) => {
-    visitorCount++;  // Increment on each request
-    res.on('finish', () => {
-      visitorCount--;  // Decrement when the response is sent
-    });
-    next();
-});
-
-// Visitor count route
-app.get("/api/visitorCount", (req, res) => {
-    res.json({ visitorCount: 99 });
-});
-
-app.listen(PORT, () => {
-   console.log(`Server running on http://localhost:${PORT}`);
-});
-
-
+// User Registration
 app.post("/register", async (req, res) => {
   const { username, email, password } = req.body;
 
-  // Check if username or email exists
-  db.get("SELECT * FROM users WHERE username = ? OR email = ?", [username, email], async (err, user) => {
-    if (user) return res.status(400).json({ error: "Username or email already exists" });
+  if (!username || !email || !password) {
+    return res.status(400).json({ message: "All fields are required" });
+  }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Insert new user
-    db.run("INSERT INTO users (username, email, password) VALUES (?, ?, ?)", [username, email, hashedPassword], (err) => {
-      if (err) return res.status(500).json({ error: "Error registering user" });
-      res.status(201).json({ message: "User registered successfully!" });
-    });
-  });
+  const hashedPassword = await bcrypt.hash(password, 10);
+  
+  try {
+    await db.run("INSERT INTO users (username, email, password) VALUES (?, ?, ?)", [username, email, hashedPassword]);
+    res.status(201).json({ message: "User registered successfully" });
+  } catch (err) {
+    res.status(400).json({ message: "User already exists" });
+  }
 });
 
-
-app.post("/login", (req, res) => {
+// User Login
+app.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
-  // Find user by email
-  db.get("SELECT * FROM users WHERE email = ?", [email], async (err, user) => {
-    if (!user) return res.status(400).json({ error: "User not found" });
+  const user = await db.get("SELECT * FROM users WHERE email = ?", [email]);
 
-    // Compare passwords
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ error: "Invalid credentials" });
-
-    // Generate JWT Token
-    const token = jwt.sign({ id: user.id, username: user.username }, SECRET_KEY, { expiresIn: "1h" });
-
-    res.json({ token, user: { id: user.id, username: user.username, email: user.email } });
-  });
-});
-
-
-const authenticateToken = (req, res, next) => {
-  const token = req.header("Authorization");
-  if (!token) return res.status(401).json({ error: "Access denied" });
-
-  try {
-    const verified = jwt.verify(token, SECRET_KEY);
-    req.user = verified;
-    next();
-  } catch (error) {
-    res.status(400).json({ error: "Invalid token" });
+  if (!user || !(await bcrypt.compare(password, user.password))) {
+    return res.status(401).json({ message: "Invalid credentials" });
   }
-};
+
+  const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: "1h" });
+  res.json({ message: "Login successful", token });
+});
 
 // Protected Route Example
-app.get("/protected", authenticateToken, (req, res) => {
-  res.json({ message: "You have access!", user: req.user });
+app.get("/profile", authenticateToken, async (req, res) => {
+  const user = await db.get("SELECT id, username, email FROM users WHERE id = ?", [req.user.id]);
+  res.json(user);
 });
+
+// Middleware to verify JWT
+function authenticateToken(req, res, next) {
+  const token = req.header("Authorization")?.split(" ")[1];
+
+  if (!token) return res.status(401).json({ message: "Access denied" });
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) return res.status(403).json({ message: "Invalid token" });
+    req.user = user;
+    next();
+  });
+}
+
+// Start Server
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 

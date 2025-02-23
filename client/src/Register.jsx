@@ -1,31 +1,30 @@
 import { useState } from "react";
 import axios from "axios";
 
-function Register() {
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [message, setMessage] = useState("");
+const API_URL = process.env.REACT_APP_BACKEND_URL;
 
-  const handleRegister = async (e) => {
+function Register() {
+  const [form, setForm] = useState({ username: "", email: "", password: "" });
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post("https://trustgame.onrender.com/api/register", { username, email, password });
-      setMessage(res.data.message);
-    } catch (err) {
-      setMessage(err.response.data.error);
+      const res = await axios.post(`${API_URL}/register`, form);
+      alert(res.data.message);
+    } catch (error) {
+      alert(error.response?.data.message || "Registration failed");
     }
   };
 
   return (
-    <form onSubmit={handleRegister}>
-      <input type="text" placeholder="Username" onChange={(e) => setUsername(e.target.value)} required />
-      <input type="email" placeholder="Email" onChange={(e) => setEmail(e.target.value)} required />
-      <input type="password" placeholder="Password" onChange={(e) => setPassword(e.target.value)} required />
+    <form onSubmit={handleSubmit}>
+      <input type="text" placeholder="Username" onChange={(e) => setForm({ ...form, username: e.target.value })} />
+      <input type="email" placeholder="Email" onChange={(e) => setForm({ ...form, email: e.target.value })} />
+      <input type="password" placeholder="Password" onChange={(e) => setForm({ ...form, password: e.target.value })} />
       <button type="submit">Register</button>
-      <p>{message}</p>
     </form>
   );
 }
 
 export default Register;
+
