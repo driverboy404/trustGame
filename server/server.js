@@ -139,3 +139,18 @@ app.get("/api/message", (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
+
+app.get('/currentUser', (req, res) => {
+  if (req.cookies.authToken) {
+    jwt.verify(req.cookies.authToken, process.env.JWT_SECRET, (err, decoded) => {
+      if (err) {
+        return res.status(401).json({ message: 'Invalid or expired token' });
+      }
+      // Return user info from decoded JWT or database
+      const user = { username: decoded.username, userId: decoded.userId }; // Example
+      return res.json({ user });
+    });
+  } else {
+    return res.json({ user: null }); // No user logged in
+  }
+});
