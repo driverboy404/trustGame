@@ -9,14 +9,14 @@ function Register() {
     e.preventDefault();
     try {
       // Register the user
-      const res = await axios.post("http://localhost:5000/register", form, {
+      const res = await axios.post(`${API_URL}/register`, form, {
         withCredentials: true, // Send cookies along with the request
       });
 
       alert(res.data.message);
 
       // Log the user in immediately after registration
-      const loginRes = await axios.post("http://localhost:5000/login", {
+      const loginRes = await axios.post(`${API_URL}/login`, {
         email: form.email,
         password: form.password,
       }, { withCredentials: true });
@@ -24,7 +24,7 @@ function Register() {
       alert(loginRes.data.message);
 
       // Fetch and display the list of logged-in users
-      const loggedInUsersRes = await axios.get("http://localhost:5000/loggedInUsers", {
+      const loggedInUsersRes = await axios.get(`${API_URL}/loggedInUsers`, {
         withCredentials: true, // Send cookies with the request
       });
 
