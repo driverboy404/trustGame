@@ -20,9 +20,9 @@ let loggedInUsers = [];
 
 // Allow requests from the frontend (Vercel)
 app.use(cors({
-  origin: 'https://the-trust-game.vercel.app', // Change this to your frontend URL
+  origin: 'https://the-trust-game.vercel.app', // Your frontend URL
   methods: 'GET, POST',
-  credentials: true,
+  credentials: true, // Allow sending cookies with the request
 }));
 
 app.use(express.json()); // Allow JSON request bodies
@@ -100,6 +100,7 @@ app.post("/login", async (req, res) => {
     httpOnly: true,  // Makes the cookie inaccessible to JavaScript
     secure: process.env.NODE_ENV === "production", // Only send the cookie over HTTPS
     maxAge: 3600 * 1000,  // 1 hour expiration
+    sameSite: 'None', // For cross-origin requests
   });
 
   // Store the user as logged in
