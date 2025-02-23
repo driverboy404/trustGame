@@ -3,6 +3,7 @@ const cors = require("cors");
 const { Pool } = require("pg");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
 
 require("dotenv").config();
 
@@ -14,13 +15,18 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
+// Store logged-in users in memory (for simplicity)
+let loggedInUsers = [];
+
 // Allow requests from the frontend (Vercel)
 app.use(cors({
   origin: 'https://the-trust-game.vercel.app', // Change this to your frontend URL
   methods: 'GET, POST',
+  credentials: true,
 }));
 
 app.use(express.json()); // Allow JSON request bodies
+app.use(cookieParser()); // To parse cookies
 
 // Helper function to execute queries
 const queryDatabase = async (query, params = []) => {
@@ -46,20 +52,8 @@ const createUsersTable = async () => {
   await queryDatabase(query);
 };
 
-// Create Visitor Table (Optional, but can be used for visitor tracking)
-const createVisitorTable = async () => {
-  const query = `
-    CREATE TABLE IF NOT EXISTS visitors (
-      id SERIAL PRIMARY KEY,
-      count INT NOT NULL
-    )
-  `;
-  await queryDatabase(query);
-};
-
 // Initialize tables
 createUsersTable();
-createVisitorTable();
 
 // Register User
 app.post("/register", async (req, res) => {
@@ -98,26 +92,42 @@ app.post("/login", async (req, res) => {
     return res.status(400).json({ message: "Invalid credentials" });
   }
 
+  // Create JWT Token
   const token = jwt.sign({ userId: user[0].id }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
-  res.status(200).json({ message: "Login successful", token });
+  // Set JWT token as a cookie
+  res.cookie("authToken", token, {
+    httpOnly: true,  // Makes the cookie inaccessible to JavaScript
+    secure: process.env.NODE_ENV === "production", // Only send the cookie over HTTPS
+    maxAge: 3600 * 1000,  // 1 hour expiration
+  });
+
+  // Store the user as logged in
+  loggedInUsers.push(user[0].username); // Store the username in the loggedInUsers array
+
+  res.status(200).json({ message: "Login successful" });
 });
 
-// Track Visitors
-let visitorCount = 0;
-app.use(async (req, res, next) => {
-  visitorCount++;
-  const query = 'INSERT INTO visitors (count) VALUES ($1)';
-  await queryDatabase(query, [visitorCount]);
-  next();
-});
+// Middleware to verify JWT from cookies
+const verifyToken = (req, res, next) => {
+  const token = req.cookies.authToken;
 
-// Get Visitor Count
-app.get("/api/visitorCount", async (req, res) => {
-  const query = 'SELECT count FROM visitors ORDER BY id DESC LIMIT 1';
-  const result = await queryDatabase(query);
-  const count = result.length > 0 ? result[0].count : 0;
-  res.json({ visitorCount: count });
+  if (!token) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).json({ message: "Invalid or expired token" });
+    }
+    req.userId = decoded.userId;
+    next();
+  });
+};
+
+// Get Logged-in Users (Display all currently logged-in users)
+app.get("/loggedInUsers", verifyToken, (req, res) => {
+  res.status(200).json({ loggedInUsers });
 });
 
 // Test Route
@@ -128,5 +138,3 @@ app.get("/api/message", (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
-
-
